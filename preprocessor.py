@@ -9,11 +9,14 @@ sent_map['NEU'] = 'neutral'
 sent_map['NEG'] = 'negative'
 
 
-def read_data(path, k_shot):
+def read_data(path, k_shot, absa_task = 'aste'):
 
 	sents = open( path + '.sent', 'r')
 	sentences = sents.readlines()
-	tups = open(path +  '.tup', 'r')
+	if absa_task == 'aste':
+		tups = open(path +  '.tup', 'r')
+	else:
+		tups = open(f'path.{absa_task}', 'r')
 	tuples = tups.readlines()
 
 	if k_shot > 0:
@@ -324,7 +327,7 @@ class ABSA_Dataset(Dataset):
 
 	def _build_examples(self):
 
-		sentences, tuples = read_data(self.data_path, self.k_shot)
+		sentences, tuples = read_data(self.data_path, self.k_shot, self.absa_task)
 		inputs, targets = get_transformed_data(sentences, tuples, self.absa_task)
 		input_tags = self.get_all_tags(sentences, tuples)  ### pad this and letzgoooo
 		trip_counts = self.count_triplets(tuples)

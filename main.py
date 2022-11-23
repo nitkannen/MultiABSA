@@ -30,8 +30,8 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
-from preprocessor import ASTE_Dataset
-from utils import correct_spaces, get_f1_for_trainer
+from preprocessor import ABSA_Dataset
+from utils import correct_spaces, get_f1_for_trainer_mono, get_f1_for_trainer_pair, get_f1_for_trainer_triplet
 
 
 def custom_print(*msg):
@@ -49,7 +49,9 @@ def initialise_args():
 	parser = argparse.ArgumentParser()
 	
 	# basic settings
+	
 	parser.add_argument("--task", default='15res', type=str, required=True, help="[15res, 14res, 16res, lap14]")
+	parser.add_argument("--absa_task", default='aste', type=str, help="[aste, ae, oe, pair, aesc]")
 	parser.add_argument("--train_dataset_path", default='train', type=str, required=True, help="path to train file")
 	parser.add_argument("--dev_dataset_path", default='dev', type=str, required=True, help="path to dev file ")
 	parser.add_argument("--test_dataset_path", default='test', type=str, required=True, help="path to test file ")
@@ -99,9 +101,9 @@ def initialise_args():
 	return args
 
 
-def get_dataset(tokenizer, data_path, task, max_seq_length, k_shot=-1):
-	return ASTE_Dataset(tokenizer=tokenizer, data_path=data_path,
-	 task=task, k_shot=k_shot, max_len=max_seq_length)
+def get_dataset(tokenizer, data_path, task, absa_task, max_seq_length, k_shot=-1):
+	return ABSA_Dataset(tokenizer=tokenizer, data_path=data_path,
+	 task=task,absa_task =absa_task,  k_shot=k_shot, max_len=max_seq_length)
 
 
 def load_model_weights(model, new_checkpoint):
@@ -115,6 +117,7 @@ class T5FineTuner(pl.LightningModule):
 		super(T5FineTuner, self).__init__()
 		
 		self.task = hparams.task
+		self.absa_task = hparams.absa_task
 		self.train_path = hparams.train_dataset_path
 		self.dev_path = hparams.dev_dataset_path
 		self.test_path = hparams.test_dataset_path
@@ -286,11 +289,35 @@ class T5FineTuner(pl.LightningModule):
 		for i in range(len(outputs)):
 			all_preds.extend(outputs[i]['predictions'])
 			all_labels.extend(outputs[i]['labels'])
-
-		p, r, f = get_f1_for_trainer(all_preds, all_labels)
-		_, _, aspect_f = get_f1_for_trainer(all_preds, all_labels, 'aspect')
-		_, _, opinion_f = get_f1_for_trainer(all_preds, all_labels, 'opinion')
-		sentiment_acc = get_f1_for_trainer(all_preds, all_labels, 'sentiment')
+		if self.absa_task == 'aste':
+			p, r, f = get_f1_for_trainer_triplet(all_preds, all_labels)
+			_, _, aspect_f = get_f1_for_trainer_triplet(all_preds, all_labels, 'aspect')
+			_, _, opinion_f = get_f1_for_trainer_triplet(all_preds, all_labels, 'opinion')
+			sentiment_acc = get_f1_for_trainer_triplet(all_preds, all_labels, 'sentiment')
+		
+		if self.absa_task == 'ae':
+			p, r, f = get_f1_for_trainer_mono(all_preds, all_labels, 'ae')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
+		
+		if self.absa_task == 'oe':
+			p, r, f = get_f1_for_trainer_mono(all_preds, all_labels, 'oe')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
+				
+		if self.absa_task == 'aesc':
+			p, r, f = get_f1_for_trainer_pair(all_preds, all_labels, 'aesc')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
+				
+		if self.absa_task == 'pair':
+			p, r, f = get_f1_for_trainer_pair(all_preds, all_labels, 'pair')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
 
 		if f > self.best_f1:
 			self.best_f1 = f
@@ -300,15 +327,17 @@ class T5FineTuner(pl.LightningModule):
 		self.log('step', self.current_epoch)
 		self.log('val prec', p, on_step=False, on_epoch=True)
 		self.log('val rec', r, on_step=False, on_epoch=True)
-		self.log('val f1', f, on_step=False, on_epoch=True)				
-		self.log('val aspect', aspect_f, on_step=False, on_epoch=True)
-		self.log('val opinion', opinion_f, on_step=False, on_epoch=True)
-		self.log('val sentiment', sentiment_acc, on_step=False, on_epoch=True)
+		self.log('val f1', f, on_step=False, on_epoch=True)	
+		if self.absa_task == 'aste':	
+			self.log('val aspect', aspect_f, on_step=False, on_epoch=True)
+			self.log('val opinion', opinion_f, on_step=False, on_epoch=True)
+			self.log('val sentiment', sentiment_acc, on_step=False, on_epoch=True)
 
 		custom_print('\nDev Results\n')
-		custom_print('Dev Aspect F1:', round(aspect_f, 3))
-		custom_print('Dev Opinion F1:', round(opinion_f, 3))
-		custom_print('Dev Sentiment Acc:', round(sentiment_acc, 3))
+		if self.absa_task == 'aste':
+			custom_print('Dev Aspect F1:', round(aspect_f, 3))
+			custom_print('Dev Opinion F1:', round(opinion_f, 3))
+			custom_print('Dev Sentiment Acc:', round(sentiment_acc, 3))
 		custom_print('Dev P:', round(p, 3))
 		custom_print('Dev R:', round(r, 3))
 		custom_print('Dev F1:', round(f, 3))
@@ -334,23 +363,50 @@ class T5FineTuner(pl.LightningModule):
 			all_preds.extend(outputs[i]['predictions'])
 			all_labels.extend(outputs[i]['labels'])
 
-		p, r, f = get_f1_for_trainer(all_preds, all_labels)
-		_, _, aspect_f = get_f1_for_trainer(all_preds, all_labels, 'aspect')
-		_, _, opinion_f = get_f1_for_trainer(all_preds, all_labels, 'opinion')
-		sentiment_acc = get_f1_for_trainer(all_preds, all_labels, 'sentiment')
+		if self.absa_task == 'aste':
+			p, r, f = get_f1_for_trainer_triplet(all_preds, all_labels)
+			_, _, aspect_f = get_f1_for_trainer_triplet(all_preds, all_labels, 'aspect')
+			_, _, opinion_f = get_f1_for_trainer_triplet(all_preds, all_labels, 'opinion')
+			sentiment_acc = get_f1_for_trainer_triplet(all_preds, all_labels, 'sentiment')
+		
+		if self.absa_task == 'ae':
+			p, r, f = get_f1_for_trainer_mono(all_preds, all_labels, 'ae')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
+		
+		if self.absa_task == 'oe':
+			p, r, f = get_f1_for_trainer_mono(all_preds, all_labels, 'oe')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
+				
+		if self.absa_task == 'aesc':
+			p, r, f = get_f1_for_trainer_pair(all_preds, all_labels, 'aesc')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
+				
+		if self.absa_task == 'pair':
+			p, r, f = get_f1_for_trainer_pair(all_preds, all_labels, 'pair')
+			aspect_f = -1
+			opinion_f = -1
+			sentiment_acc = -1
 
 		self.log('step', self.current_epoch)
 		self.log('test prec', p, on_step=False, on_epoch=True)
 		self.log('test rec', r, on_step=False, on_epoch=True)
 		self.log('test f1', f, on_step=False, on_epoch=True)
-		self.log('test aspect', aspect_f, on_step=False, on_epoch=True)
-		self.log('test opinion', opinion_f, on_step=False, on_epoch=True)		
-		self.log('test sentiment', sentiment_f, on_step=False, on_epoch=True)
+		if self.absa_task == 'aste':
+			self.log('test aspect', aspect_f, on_step=False, on_epoch=True)
+			self.log('test opinion', opinion_f, on_step=False, on_epoch=True)		
+			self.log('test sentiment', sentiment_acc, on_step=False, on_epoch=True)
 
 		custom_print('\nTest Results\n')
-		custom_print('Test Aspect F1:', round(aspect_f, 3))
-		custom_print('Test Opinion F1:', round(opinion_f, 3))
-		custom_print('Test Sentiment Acc:', round(sentiment_acc, 3))
+		if self.absa_task == 'aste':
+			custom_print('Test Aspect F1:', round(aspect_f, 3))
+			custom_print('Test Opinion F1:', round(opinion_f, 3))
+			custom_print('Test Sentiment Acc:', round(sentiment_acc, 3))
 		custom_print('Test P:', round(p, 3))
 		custom_print('Test R:', round(r, 3))
 		custom_print('Test F1:', round(f, 3))
@@ -405,6 +461,7 @@ class T5FineTuner(pl.LightningModule):
 			tokenizer=self.tokenizer, 
 			data_path =self.train_path, 
 			task = self.task, 
+			absa_task = self.absa_task,
 			max_seq_length = self.max_seq_length, 
 			k_shot = self.k_shot
 			)
@@ -427,6 +484,7 @@ class T5FineTuner(pl.LightningModule):
 			tokenizer=self.tokenizer, 
 			data_path = self.dev_path, 
 			task = self.task, 
+			absa_task = self.absa_task,
 			max_seq_length = self.max_seq_length
 			)
 		return DataLoader(val_dataset, batch_size=self.eval_batch_size)
@@ -438,12 +496,13 @@ class T5FineTuner(pl.LightningModule):
 			tokenizer=self.tokenizer, 
 			data_path = self.test_path, 
 			task = self.task, 
+			absa_task = self.absa_task,
 			max_seq_length = self.max_seq_length
 			)
 		return DataLoader(test_dataset, batch_size=self.eval_batch_size)
 
 
-def evaluate(data_loader, model, device):
+def evaluate(data_loader, model, device, absa_task):
 
 	#model.eval()
 	outputs, targets = [], []
@@ -465,11 +524,35 @@ def evaluate(data_loader, model, device):
 	for l in decoded_preds:
 		custom_print(l)
 	# print(decoded_labels)
+	if absa_task == 'aste':
+		p, r, f = get_f1_for_trainer_triplet(decoded_preds, decoded_labels)
+		a_p, a_r, a_f = get_f1_for_trainer_triplet(decoded_preds, decoded_labels, 'aspect')
+		o_p, o_r, o_f = get_f1_for_trainer_triplet(decoded_preds, decoded_labels, 'opinion')	
+		sentiment_acc = get_f1_for_trainer_triplet(decoded_preds, decoded_labels, 'sentiment')
 
-	p, r, f = get_f1_for_trainer(decoded_preds, decoded_labels)
-	a_p, a_r, a_f = get_f1_for_trainer(decoded_preds, decoded_labels, 'aspect')
-	o_p, o_r, o_f = get_f1_for_trainer(decoded_preds, decoded_labels, 'opinion')	
-	sentiment_acc = get_f1_for_trainer(decoded_preds, decoded_labels, 'sentiment')
+	if absa_task == 'ae':
+		p, r, f = get_f1_for_trainer_mono(decoded_preds, decoded_labels, 'ae')
+		a_p, a_r, a_f = -1, -1, -1
+		o_p, o_r, o_f = -1, -1, -1	
+		sentiment_acc
+		
+	if absa_task == 'oe':
+		p, r, f = get_f1_for_trainer_mono(decoded_preds, decoded_labels, 'oe')
+		a_p, a_r, a_f = -1, -1, -1
+		o_p, o_r, o_f = -1, -1, -1	
+		sentiment_acc
+			
+	if absa_task == 'aesc':
+		p, r, f = get_f1_for_trainer_pair(decoded_preds, decoded_labels, 'aesc')
+		a_p, a_r, a_f = -1, -1, -1
+		o_p, o_r, o_f = -1, -1, -1	
+		sentiment_acc
+			
+	if absa_task == 'pair':
+		p, r, f = get_f1_for_trainer_pair(decoded_preds, decoded_labels, 'pair')
+		a_p, a_r, a_f = -1, -1, -1
+		o_p, o_r, o_f = -1, -1, -1	
+		sentiment_acc
 
 	custom_print('\n\nTest Results\n')
 	custom_print('*************************** Aspect *******************************')
@@ -600,7 +683,7 @@ if __name__ == '__main__':
 		# dev_dataset = ASTE_Dataset(tokenizer, data_path=args.dev_dataset_path, task=args.task, max_len=args.max_seq_length)
 		# dev_loader = DataLoader(dev_dataset, batch_size=32)
 		
-		test_dataset = ASTE_Dataset(tokenizer, data_path=args.test_dataset_path, task=args.task, max_len=args.max_seq_length)
+		test_dataset = ABSA_Dataset(tokenizer, data_path=args.test_dataset_path, task=args.task, absa_task = args.absa_task, max_len=args.max_seq_length)
 		test_loader = DataLoader(test_dataset, batch_size=32)
 
 		custom_print('*************Loading Checkpoint***************: ', model.best_checkpoint)
@@ -615,7 +698,7 @@ if __name__ == '__main__':
 		tuner.to(device)
 
 		custom_print('**************** Printing Model Outputs for Test***************')
-		evaluate(test_loader, tuner, device)
+		evaluate(test_loader, tuner, device, args.absa_task)
 
 		## To DO:
 

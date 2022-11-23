@@ -23,7 +23,7 @@ def correct_spaces(result):
 
 
 def post_process(text, starter):
-    	
+		
 	text = text.strip()
 	if len(text) > len(starter):
 		if text[:len(starter)] != starter:
@@ -36,130 +36,130 @@ def post_process(text, starter):
 
 def decode_pred_aspects(text): # asp
 
-    starter = '<aspect>'
-    text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
-    text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", starter ).replace("<extra_id_-3>", starter)
-    text_processed = post_process(text, starter)
-    text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
-    aspects = []
-    for token in text_processed.split():
-        if token.startswith('<'):
-            continue
-        else:
-            if token.strip() not in aspects:
-                aspects.append(token.strip())
+	starter = '<aspect>'
+	text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", starter ).replace("<extra_id_-3>", starter)
+	text_processed = post_process(text, starter)
+	text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	aspects = []
+	for token in text_processed.split():
+		if token.startswith('<'):
+			continue
+		else:
+			if token.strip() not in aspects:
+				aspects.append(token.strip())
 
-    return aspects
+	return aspects
 			
 
 
 def decode_pred_opinions(text): # op
 
-    starter  = '<opinion>'
-    text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
-    text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", starter ).replace("<extra_id_-3>", starter)
-    text_processed = post_process(text, starter)
-    text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
-    opinions = []
-    for token in text_processed.split():
-        if token.startswith('<'):
-            continue
-        else:
-            if token.strip() not in opinions:
-                opinions.append(token.strip())
+	starter  = '<opinion>'
+	text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", starter ).replace("<extra_id_-3>", starter)
+	text_processed = post_process(text, starter)
+	text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	opinions = []
+	for token in text_processed.split():
+		if token.startswith('<'):
+			continue
+		else:
+			if token.strip() not in opinions:
+				opinions.append(token.strip())
 
-    return opinions
-    			
+	return opinions
+				
 
 def decode_pred_pairs(text): # pairs
 
-    starter = '<aspect>'
-    text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
-    text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", '<opinion>')
-    text_processed = post_process(text, starter)
-    text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	starter = '<aspect>'
+	text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", '<opinion>')
+	text_processed = post_process(text, starter)
+	text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
 
-    current = None
-    aspect, opinion = "", ""
-    pairs = []
-    for token in text_processed.split():
-        if token == '<aspect>':
-            current = 'a'
-            if opinion != '':
-                entry = {"aspect": aspect.strip(), "opinion": opinion.strip()}
-                if entry not in pairs:
-                    pairs.append(entry)
+	current = None
+	aspect, opinion = "", ""
+	pairs = []
+	for token in text_processed.split():
+		if token == '<aspect>':
+			current = 'a'
+			if opinion != '':
+				entry = {"aspect": aspect.strip(), "opinion": opinion.strip()}
+				if entry not in pairs:
+					pairs.append(entry)
 					
-                opinion = ""
-            aspect = ""
+				opinion = ""
+			aspect = ""
 
-        elif token == '<opinion>':
-            current = 'o'
-            if opinion != '':
-                entry = {"aspect": aspect.strip(), "opinion": opinion.strip()}
-                if entry not in pairs:
-                    pairs.append(entry)
+		elif token == '<opinion>':
+			current = 'o'
+			if opinion != '':
+				entry = {"aspect": aspect.strip(), "opinion": opinion.strip()}
+				if entry not in pairs:
+					pairs.append(entry)
 					
-                opinion = ""
+				opinion = ""
 
-        else:
-            if current == 'o':
-                opinion = ' ' + token
-            else:
-                aspect = ' ' + token
-                
-    if aspect != '' and opinion != '':
-        entry = {"aspect": aspect.strip(), "opinion": opinion.strip()}
-        if entry not in pairs:
-            pairs.append(entry)
-    
+		else:
+			if current == 'o':
+				opinion = ' ' + token
+			else:
+				aspect = ' ' + token
+				
+	if aspect != '' and opinion != '':
+		entry = {"aspect": aspect.strip(), "opinion": opinion.strip()}
+		if entry not in pairs:
+			pairs.append(entry)
+	
 
-    return pairs
+	return pairs
 
 def decode_pred_aesc(text): # pairs
 
-    starter = '<aspect>'
-    text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
-    text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", '<sentiment>')
-    text_processed = post_process(text, starter)
-    text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	starter = '<aspect>'
+	text = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
+	text = text.replace("<extra_id_-1>", starter).replace("<extra_id_-2>", '<sentiment>')
+	text_processed = post_process(text, starter)
+	text_processed = text_processed.replace("<s>", "").replace("<pad>", "").replace("</s>", "")
 
-    current = None
-    aspect, sentiment = "", ""
-    aescs = []
-    for token in text_processed.split():
-        if token == '<aspect>':
-            current = 'a'
-            if sentiment != '':
-                entry = {"aspect": aspect.strip(), "sentiment": sentiment.strip()}
-                if entry not in aescs:
-                    aescs.append(entry)
+	current = None
+	aspect, sentiment = "", ""
+	aescs = []
+	for token in text_processed.split():
+		if token == '<aspect>':
+			current = 'a'
+			if sentiment != '':
+				entry = {"aspect": aspect.strip(), "sentiment": sentiment.strip()}
+				if entry not in aescs:
+					aescs.append(entry)
 					
-                sentiment = ""
-            aspect = ""
+				sentiment = ""
+			aspect = ""
 
-        elif token == '<sentiment>':
-            current = 'o'
-            if sentiment != '':
-                entry = {"aspect": aspect.strip(), "sentiment": sentiment.strip()}
-                if entry not in aescs:
-                    aescs.append(entry)
+		elif token == '<sentiment>':
+			current = 'o'
+			if sentiment != '':
+				entry = {"aspect": aspect.strip(), "sentiment": sentiment.strip()}
+				if entry not in aescs:
+					aescs.append(entry)
 					
-                sentiment = ""
+				sentiment = ""
 
-        else:
-            if current == 'o':
-                sentiment = ' ' + token
-            else:
-                aspect = ' ' + token
-                
-    if aspect != '' and sentiment != '':
-        entry = {"aspect": aspect.strip(), "sentiment": sentiment.strip()}
-        if entry not in aescs:
-            aescs.append(entry)
-    
+		else:
+			if current == 'o':
+				sentiment = ' ' + token
+			else:
+				aspect = ' ' + token
+				
+	if aspect != '' and sentiment != '':
+		entry = {"aspect": aspect.strip(), "sentiment": sentiment.strip()}
+		if entry not in aescs:
+			aescs.append(entry)
+	
 
-    return aescs
+	return aescs
 
 
 def decode_pred_triplets(text): # triplet
@@ -213,21 +213,21 @@ def decode_pred_triplets(text): # triplet
 
 
 def get_gold_aspects(dev_target_sample): # done
-    	
+		
 	aspect = dev_target_sample.split('|')
 	aspects_list = [asp.strip() for asp in aspect ]
 	
 	return aspects_list
 
 def get_gold_opinions(dev_target_sample): # done
-    	
+		
 	opinions = dev_target_sample.split('|')
 	opinions_list = [op.strip() for op in opinions ]
 	
 	return opinions_list
 
 def get_gold_pairs(dev_target_sample): # done
-    	
+		
 	pairs = dev_target_sample.split('|')
 	pairs_list = []
 	for pair in pairs:
@@ -240,7 +240,7 @@ def get_gold_pairs(dev_target_sample): # done
 	return pairs_list
 
 def get_gold_aesc(dev_target_sample): # done
-    	
+		
 	aescs = dev_target_sample.split('|')
 	aescs_list = []
 	for aesc in aescs:
@@ -269,19 +269,113 @@ def get_gold_triplets(dev_target_sample):
 
 
 
-def is_full_match(triplet, triplets):
+def is_full_match(gold, preds, sub = 'triplet' ):
 
-	for t in triplets:
-		if t['aspect'].lower() == triplet["aspect"].lower() and \
-		t['opinion'].lower() == triplet['opinion'].lower() and \
-		t['sentiment'].lower() == triplet['sentiment'].lower():
+	if sub == 'triplet':
+		for t in preds:
+			if t['aspect'].lower() == gold["aspect"].lower() and \
+			t['opinion'].lower() == gold['opinion'].lower() and \
+			t['sentiment'].lower() == gold['sentiment'].lower():
+				return True
+	if sub == 'pair':
+		for t in preds:
+			match =  True
+			for key in t.keys():
+				if t[key].lower() != gold[key].lower():
+					match = False
+			
+			if match:
+				return True
+			
+	
+	elif sub == 'mono':
+		preds = [el.lower() for el in preds]
+		if gold.lower() in preds:
 			return True
+			
 
 	return False
 
+def get_f1_for_trainer_mono(predictions, target, absa_task = 'ae'):
+		
+	n = len(target)
+	assert n == len(predictions)
+
+	preds, gold = [], []  
+	for i in range(n):	
+		if absa_task == 'ae':
+			preds.append(decode_pred_aspects(predictions[i]))
+			gold.append(decode_pred_aspects(target[i]))
+		elif absa_task == 'oe':
+			preds.append(decode_pred_opinions(predictions[i]))
+			gold.append(decode_pred_opinions(target[i]))
+
+	for i in range(n):
+		pred_count += len(preds[i])
+		gold_count += len(gold[i])
+
+		for gt_mono in gold[i]:
+			if is_full_match(gt_mono, preds[i], 'mono'):
+				correct_count += 1
 
 
-def get_f1_for_trainer(predictions, target, component=None):
+	pred_count = 0
+	gold_count = 0
+	correct_count = 0
+
+
+	p = float(correct_count) / (pred_count + 1e-8 )
+	r = float(correct_count) / (gold_count + 1e-8 )
+	f1 = (2 * p * r) / (p + r + 1e-8)
+	return p, r, f1
+
+def get_f1_for_trainer_pair(predictions, target, absa_task = 'pair', component=None,):
+		
+	n = len(target)
+	assert n == len(predictions)
+
+	preds, gold = [], []  
+	for i in range(n):	
+		if absa_task == 'pair':
+			preds.append(decode_pred_pairs(predictions[i]))
+			gold.append(decode_pred_pairs(target[i]))
+		elif absa_task == 'aesc':
+			preds.append(decode_pred_aesc(predictions[i]))
+			gold.append(decode_pred_aesc(target[i]))
+				
+
+	pred_count = 0
+	gold_count = 0
+	correct_count = 0
+	acc = 0
+
+	for i in range(n):
+
+		pred_aspects = list(set([t['aspect'].lower() for t in preds[i]]))
+		gold_aspects = list(set([t['aspect'].lower() for t in gold[i]]))
+			
+
+		if component == 'aspect':
+			pred_count += len(pred_aspects)
+			gold_count += len(gold_aspects)
+			correct_count += len(list(set(pred_aspects).intersection(set(gold_aspects))))
+			
+		elif component is None:
+			pred_count += len(preds[i])
+			gold_count += len(gold[i])
+
+			for gt_pair in gold[i]:
+				if is_full_match(gt_pair, preds[i], 'pair'):
+					correct_count += 1	
+
+	p = float(correct_count) / (pred_count + 1e-8 )
+	r = float(correct_count) / (gold_count + 1e-8 )
+	f1 = (2 * p * r) / (p + r + 1e-8)
+	return p, r, f1
+
+		
+
+def get_f1_for_trainer_triplet(predictions, target, component=None):
 	
 	# print(predictions)
 	# print(target)
