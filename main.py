@@ -534,25 +534,25 @@ def evaluate(data_loader, model, device, absa_task):
 		p, r, f = get_f1_for_trainer_mono(decoded_preds, decoded_labels, 'ae')
 		a_p, a_r, a_f = -1, -1, -1
 		o_p, o_r, o_f = -1, -1, -1	
-		sentiment_acc
+		sentiment_acc = -1
 		
 	if absa_task == 'oe':
 		p, r, f = get_f1_for_trainer_mono(decoded_preds, decoded_labels, 'oe')
 		a_p, a_r, a_f = -1, -1, -1
 		o_p, o_r, o_f = -1, -1, -1	
-		sentiment_acc
+		sentiment_acc = -1
 			
 	if absa_task == 'aesc':
 		p, r, f = get_f1_for_trainer_pair(decoded_preds, decoded_labels, 'aesc')
 		a_p, a_r, a_f = -1, -1, -1
 		o_p, o_r, o_f = -1, -1, -1	
-		sentiment_acc
+		sentiment_acc = -1
 			
 	if absa_task == 'pair':
 		p, r, f = get_f1_for_trainer_pair(decoded_preds, decoded_labels, 'pair')
 		a_p, a_r, a_f = -1, -1, -1
 		o_p, o_r, o_f = -1, -1, -1	
-		sentiment_acc
+		sentiment_acc = -1
 
 	custom_print('\n\nTest Results\n')
 	custom_print('*************************** Aspect *******************************')
