@@ -255,12 +255,12 @@ class ABSA_Dataset(Dataset):
 
 		src_mask = self.inputs[index]["attention_mask"].squeeze()      # might need to squeeze
 		target_mask = self.targets[index]["attention_mask"].squeeze()  # might need to squeeze
-		op_tags = self.input_tags[index].squeeze()
-		triplet_count = self.trip_counts[index]
+		# op_tags = self.input_tags[index].squeeze()
+		# triplet_count = self.trip_counts[index]
 
 		return {"source_ids": source_ids, "source_mask": src_mask, 
 		"target_ids": target_ids, "target_mask": target_mask, 
-		"op_tags": op_tags, "triplet_count": triplet_count
+		#"op_tags": op_tags, "triplet_count": triplet_count
 		}
 
 
