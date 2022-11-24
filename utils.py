@@ -310,6 +310,10 @@ def get_f1_for_trainer_mono(predictions, target, absa_task = 'ae'):
 			preds.append(decode_pred_opinions(predictions[i]))
 			gold.append(decode_pred_opinions(target[i]))
 
+	pred_count = 0
+	gold_count = 0
+	correct_count = 0
+	
 	for i in range(n):
 		pred_count += len(preds[i])
 		gold_count += len(gold[i])
@@ -319,9 +323,6 @@ def get_f1_for_trainer_mono(predictions, target, absa_task = 'ae'):
 				correct_count += 1
 
 
-	pred_count = 0
-	gold_count = 0
-	correct_count = 0
 
 
 	p = float(correct_count) / (pred_count + 1e-8 )
