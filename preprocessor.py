@@ -16,7 +16,7 @@ def read_data(path, k_shot, absa_task = 'aste'):
 	if absa_task == 'aste':
 		tups = open(path +  '.tup', 'r')
 	else:
-		tups = open(f'{path}.{absa_task}', 'r')
+		tups = open(f'{path}.{absa_task}', 'r', encoding = "ISO-8859-1")
 	tuples = tups.readlines()
 
 	if k_shot > 0:
